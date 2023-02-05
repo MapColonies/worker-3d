@@ -7,31 +7,18 @@ import { SERVICES } from './common/constants';
 import { SayCommand } from './sayCommand/sayCommand';
 import { registerExternalValues, RegisterOptions } from './containerConfig';
 import { HelloWorldCommand } from './helloWorldCommand/helloWorldCommand';
+import { WorkerManager } from './workerManager/workerManager';
 
 @singleton()
 export class App {
-  public cli: Argv;
 
   public constructor(
     @inject(SERVICES.LOGGER) private readonly logger: Logger,
     private readonly sayCommand: SayCommand,
-    private readonly helloWorldCommand: HelloWorldCommand
+    private readonly helloWorldCommand: HelloWorldCommand,
+    private readonly workerManager: WorkerManager
   ) {
-    this.cli = this.createYargsCli();
-  }
-
-  public async run(args: string[]): Promise<void> {
-    await Promise.resolve(this.cli.parse(hideBin(args)));
-  }
-
-  private createYargsCli(): Argv {
-    return yargs()
-      .usage('Usage: $0 <command> [options]')
-      .command(this.helloWorldCommand)
-      .command(this.sayCommand)
-      .help('h')
-      .alias('h', 'help')
-      .strict();
+    workerManager.worker();
   }
 }
 

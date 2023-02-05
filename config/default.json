@@ -13,5 +13,32 @@
       "url": "http://telemetryUrl/metrics",
       "interval": "3"
     }
+  },
+  "jobManager": {
+    "url": "http://127.0.0.1:8080"
+  },
+  "S3": {
+    "accessKeyId": "minioadmin",
+    "secretAccessKey": "minioadmin",
+    "endpointUrl": "http://127.0.0.1:9000",
+    "bucket": "3dtiles",
+    "destinationBucket": "destination3dtiles",
+    "forcePathStyle": true,
+    "sslEnabled": false
+  },
+  "FS": {
+    "source": {
+      "pvPath": "/home/netanel/3DModels"
+    },
+    "destination": {
+      "pvPath": "/home/netanel/destination3DModels"
+    }
+  },
+  "worker": {
+    "source": "S3",
+    "destination": "S3",
+    "jobType": "3D",
+    "taskType": "3D",
+    "waitTime": 5000
   }
 }
