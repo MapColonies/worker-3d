@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import { container } from 'tsyringe';
-import { GetObjectCommand, GetObjectRequest, PutObjectCommand, PutObjectRequest, S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
+import { GetObjectCommand, GetObjectRequest, ListObjectsCommand, ListObjectsRequest, PutObjectCommand, PutObjectRequest, S3Client, S3ClientConfig, S3ServiceException } from '@aws-sdk/client-s3';
 import { Logger } from '@map-colonies/js-logger';
 import httpStatus from 'http-status-codes';
 import { IConfigProvider, IData, IS3Config } from '../interfaces';
@@ -39,9 +39,6 @@ export class S3Provider implements IConfigProvider {
     
     try {
       const response = await this.s3.send(new GetObjectCommand(getParams));
-      if (response.$metadata.httpStatusCode != httpStatus.OK) {
-      throw new AppError('', httpStatus.INTERNAL_SERVER_ERROR, `Didn't get the file ${filePath}`, false);
-      }
       const data: IData = {
         content: response.Body as Readable,
         length: response.ContentLength
@@ -49,11 +46,16 @@ export class S3Provider implements IConfigProvider {
       return data;
 
     } catch (e) {
-      throw new AppError('', httpStatus.INTERNAL_SERVER_ERROR, "Didn't connect to S3", false);
+      if (e instanceof S3ServiceException) {
+          throw new AppError('', e.$metadata.httpStatusCode ?? httpStatus.INTERNAL_SERVER_ERROR, `${e.name}, message: ${e.message}, file: ${filePath}, bucket: ${this.s3Config.bucket}}`, false);
+      }
+      this.logger.error({msg: e});
+      throw new AppError('', httpStatus.INTERNAL_SERVER_ERROR, "Didn't throw a S3 exception in getting file", false);
     }
   }
 
   public async postFile(filePath: string, data: IData): Promise<void> {
+    
     /* eslint-disable @typescript-eslint/naming-convention */
     const putParams: PutObjectRequest = {
       Bucket: this.s3Config.destinationBucket,
@@ -63,13 +65,27 @@ export class S3Provider implements IConfigProvider {
     };
     /* eslint-enable @typescript-eslint/naming-convention */
     try {
-      const response = await this.s3.send(new PutObjectCommand(putParams));
-      if (response.$metadata.httpStatusCode != httpStatus.OK) {
-      throw new AppError('', httpStatus.INTERNAL_SERVER_ERROR, `Didn't write the file ${filePath} in S3`, false);
-      }
-
+      await this.s3.send(new PutObjectCommand(putParams));
     } catch (e) {
-      throw new AppError('', httpStatus.INTERNAL_SERVER_ERROR, "Didn't connect to S3", false);
+      if (e instanceof S3ServiceException) {
+          throw new AppError('', e.$metadata.httpStatusCode ?? httpStatus.INTERNAL_SERVER_ERROR, `${e.name}, message: ${e.message}, file: ${filePath}, bucket: ${this.s3Config.bucket}}`, false);
+      }
+      this.logger.error({msg: e});
+      throw new AppError('', httpStatus.INTERNAL_SERVER_ERROR, "Didn't throw a S3 exception in writting file", false);
     }
   }
+
+  // public async isModelExists(model: string): Promise<boolean> {
+
+  //   /* eslint-disable @typescript-eslint/naming-convention */
+  //   const listParams: ListObjectsRequest = {
+  //     Bucket: this.s3Config.destinationBucket,
+  //     Delimiter: '/',
+  //     Prefix: model + '/',
+  //   };
+  //   /* eslint-enable @typescript-eslint/naming-convention */
+
+  //   const response = await this.s3.send(new ListObjectsCommand(listParams));
+  //   return false;
+  // }
 }

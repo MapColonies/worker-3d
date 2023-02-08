@@ -15,7 +15,8 @@ export class WorkerManager {
     @inject(SERVICES.LOGGER) private readonly logger: Logger,
     @inject(SERVICES.CONFIG) private readonly config: IConfig,
     @inject(JobManagerWrapper) private readonly jobManagerClient: JobManagerWrapper,
-    @inject(SERVICES.CONFIGPROVIDER) private readonly configProvider: IConfigProvider
+    @inject(SERVICES.CONFIGPROVIDERFROM) private readonly configProviderFrom: IConfigProvider,
+    @inject(SERVICES.CONFIGPROVIDERTO) private readonly configProviderTo: IConfigProvider
     ) {}
   public async worker(): Promise<void> {
     
@@ -24,6 +25,7 @@ export class WorkerManager {
       const task = await this.jobManagerClient.startTask();
 
       if(task == null) {
+        this.logger.info({ msg: "There are no tasks... sleeping" });
         await sleep(this.config.get<number>("worker.waitTime"));
         continue;
       }
@@ -31,8 +33,8 @@ export class WorkerManager {
       const files: string[] = task.parameters.paths;
       const taskLength = files.length;
       files.map(async (file: string) => {
-        const data = await this.configProvider.getFile(file);
-        await this.configProvider.postFile(file, data);
+        const data = await this.configProviderFrom.getFile(file);
+        await this.configProviderTo.postFile(file, data);
       });
       await this.jobManagerClient.completeTask(task);
       await this.jobManagerClient.progressJob(task.jobId);

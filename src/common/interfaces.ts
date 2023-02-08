@@ -29,8 +29,9 @@ export interface IFSConfig {
   pvPath: string;
 }
 
-export interface IWorkerConfig {
-  configProvider: Providers;
+export interface IProviderConfig {
+  source: Providers;
+  destination: Providers;
 }
 
 export interface FSConfig {
@@ -44,6 +45,7 @@ export interface IData {
 }
 
 export interface IConfigProvider {
-  getFile: (model: string) => Promise<IData>;
-  postFile: (model: string, data: IData) => Promise<void>;
+  getFile: (fileName: string) => Promise<IData>;
+  postFile: (fileName: string, data: IData) => Promise<void>;
+  // isModelExists: (model: string) => boolean | Promise<boolean>;
 }

@@ -22,7 +22,7 @@
     "secretAccessKey": "minioadmin",
     "endpointUrl": "http://127.0.0.1:9000",
     "bucket": "3dtiles",
-    "destinationBucket": "destination3dtiles",
+    "destinationBucket": "3dtiles-destination",
     "forcePathStyle": true,
     "sslEnabled": false
   },
@@ -35,9 +35,11 @@
     }
   },
   "worker": {
-    "source": "S3",
-    "destination": "S3",
-    "jobType": "3D",
+    "configProvider": {
+      "source": "S3",
+      "destination": "S3"
+    },
+    "jobType": "RECORD_3D",
     "taskType": "3D",
     "waitTime": 5000
   }

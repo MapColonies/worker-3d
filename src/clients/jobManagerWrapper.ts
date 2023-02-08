@@ -29,6 +29,7 @@ export class JobManagerWrapper extends JobManagerClient {
       const task  = await this.consume<ITaskParameters>();
       return task;
     } catch(err) {
+      this.logger.error({ msg: err });
       throw new AppError('', httpStatus.INTERNAL_SERVER_ERROR, `Problem with jobManager. Didn't get task to work on`, false);
     }
   }
@@ -51,7 +52,8 @@ export class JobManagerWrapper extends JobManagerClient {
     }
   }
 
-  public async progressJob(jobId: string | undefined): Promise<void> {
+  public async progressJob(jobId: string | undefined): Promise<boolean> {
+    let isJobCompelted = false;
     if(jobId == undefined) {
       throw new AppError('', httpStatus.INTERNAL_SERVER_ERROR, `Somehow jobId is undefined`, false);
     }
@@ -63,18 +65,20 @@ export class JobManagerWrapper extends JobManagerClient {
 
       const payload: IUpdateJobBody<IJobParameters> = {
         // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-        percentage: job.completedTasks/job.taskCount*100
+        percentage: parseInt((job.completedTasks/job.taskCount*100).toString())
       };
 
       if (job.taskCount == job.completedTasks) {
         payload.status = OperationStatus.COMPLETED;
+        isJobCompelted = true;
       }
 
       await this.updateJob<IJobParameters>(jobId, payload);
-      
-      return;
+
+      return isJobCompelted;
 
     } catch(err) {
+      this.logger.error({ msg: err });
       throw new AppError('', httpStatus.INTERNAL_SERVER_ERROR, `Problem with jobManager. Didn't get task to work on`, false);
     }
   }
